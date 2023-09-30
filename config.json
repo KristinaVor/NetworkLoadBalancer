@@ -1,0 +1,19 @@
+{
+    "listen_port": 12345,
+    "max_packets_per_second": 100,
+    "nodes": [
+      {
+        "address": "127.0.0.1",
+        "port": 8080
+      },
+      {
+        "address": "127.0.0.1",
+        "port": 8081
+      },
+      {
+        "address": "127.0.0.1",
+        "port": 8082
+      }
+    ]
+  }
+  
