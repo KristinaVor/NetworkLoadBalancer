@@ -9,6 +9,7 @@ struct Node {
     std::string address;
     int port;
     int weight;
+    int load;
 };
 
 // Функция для чтения конфигурационного файла

@@ -1,0 +1,3 @@
+/home/kristina/GIT_Project/NetworkLoadBalancer/build/CMakeFiles/NetworkLoadBalancer.dir
+/home/kristina/GIT_Project/NetworkLoadBalancer/build/CMakeFiles/edit_cache.dir
+/home/kristina/GIT_Project/NetworkLoadBalancer/build/CMakeFiles/rebuild_cache.dir

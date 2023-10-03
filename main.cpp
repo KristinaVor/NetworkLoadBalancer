@@ -1,4 +1,4 @@
-#include "load_balancer.h"
+#include "load_balancer.hpp"
 #include <iostream>
 
 int main(int argc, char* argv[]) {

@@ -1,4 +1,4 @@
-#include "load_balancer.h"
+#include "load_balancer.hpp"
 #include <iostream>
 #include <fstream>
 #include <cstring>
@@ -8,11 +8,11 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include <nlohmann/json.hpp>
+#include "json.hpp"
 
 using json = nlohmann::json;
 
-// Функция для чтения конфигурационного файла
+// Function for reading the configuration file
 bool ReadConfig(const std::string& config_file, int& listen_port, std::vector<Node>& nodes, int& max_packets_per_second) {
     std::ifstream file(config_file);
     if (!file) {
@@ -24,7 +24,7 @@ bool ReadConfig(const std::string& config_file, int& listen_port, std::vector<No
         json config;
         file >> config;
 
-        // Прочитать настройки из JSON
+        // Read settings from JSON
         listen_port = config["listen_port"];
         max_packets_per_second = config["max_packets_per_second"];
 
@@ -33,6 +33,8 @@ bool ReadConfig(const std::string& config_file, int& listen_port, std::vector<No
             Node n;
             n.address = node["address"];
             n.port = node["port"];
+            n.weight = node["weight"];
+            n.load = 0; // Initialize load to 0
             nodes.push_back(n);
         }
 
@@ -43,10 +45,8 @@ bool ReadConfig(const std::string& config_file, int& listen_port, std::vector<No
     }
 }
 
-
-// Главная функция балансировки нагрузки
+// Main load balancing function
 void BalanceLoad(int listen_port, const std::vector<Node>& nodes, int max_packets_per_second) {
-    // Создание сокета для приема UDP-датаграмм
     int udp_socket = socket(AF_INET, SOCK_DGRAM, 0);
     if (udp_socket == -1) {
         std::cerr << "Error creating UDP socket." << std::endl;
@@ -64,7 +64,6 @@ void BalanceLoad(int listen_port, const std::vector<Node>& nodes, int max_packet
         return;
     }
 
-    // Создание сокетов для отправки датаграмм к узлам
     std::vector<int> node_sockets;
     for (const Node& node : nodes) {
         int node_socket = socket(AF_INET, SOCK_DGRAM, 0);
@@ -86,27 +85,27 @@ void BalanceLoad(int listen_port, const std::vector<Node>& nodes, int max_packet
             continue;
         }
 
-        // Подсчет общей нагрузки
+        // Calculate total load
         int total_load = 0;
         for (const Node& node : nodes) {
             total_load += node.load;
         }
 
-        // Проверка на ограничение нагрузки
+        // Check load limit
         if (total_load >= max_packets_per_second) {
             std::cerr << "Load limit exceeded. Dropping packet." << std::endl;
             continue;
         }
 
-        // Балансировка нагрузки - выбор узла с наименьшей нагрузкой
-        Node* selected_node = nullptr;
-        for (Node& node : nodes) {
+        // Balance load - choose the node with the lowest load
+        const Node* selected_node = nullptr;
+        for (const Node& node : nodes) {
             if (selected_node == nullptr || node.load < selected_node->load) {
                 selected_node = &node;
             }
         }
 
-        // Отправка датаграммы на выбранный узел
+        // Send the datagram to the selected node
         int node_socket = node_sockets[std::distance(&nodes[0], selected_node)];
 
         struct sockaddr_in node_addr;
@@ -116,8 +115,8 @@ void BalanceLoad(int listen_port, const std::vector<Node>& nodes, int max_packet
 
         sendto(node_socket, buffer, bytes_received, 0, (struct sockaddr*)&node_addr, sizeof(node_addr));
 
-        // Увеличение нагрузки выбранного узла
-        selected_node->load++;
+        // Increase the load of the selected node
+        const_cast<Node*>(selected_node)->load++;
     }
 
     for (int node_socket : node_sockets) {
@@ -126,4 +125,3 @@ void BalanceLoad(int listen_port, const std::vector<Node>& nodes, int max_packet
 
     close(udp_socket);
 }
-
